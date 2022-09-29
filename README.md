@@ -25,10 +25,8 @@ Simple formulario para llamar al formulario de pago de culqi con el monto indica
         - `source_id`
         - `metadata`
             - el objeto `metadata` es para agregar datos arbitrarios definidos por el usuario
-    - Debe enviar `data` vía POST al endpoint de charge que se haya definido en el backend
+    - Debe enviar `data` vía POST al *endpoint de charge* que se haya definido en el backend
 - `Culqi.open()` abre el formulario de pago
-    - Cuando se presione el botón de pagar, ejecutará la función window.culqi() que se haya definido previamente
+    - Cuando se presione el *botón de pagar*, ejecutará la función `window.culqi()` que se haya definido previamente
         - Si todo va bien, el *objeto* `Culqi.token` es el token que será seteado por Culqi
-        - Se envía la data al endpoint de charge
-
-- 
+        - Se envía la data al *endpoint de charge*
