@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pago Culqi</title>
+</head>
+
+<body>
+    <div>
+        <h1>Pago Culqi</h1>
+
+        <input type="number" placeholder="Monto S/" id="input_monto">
+
+        <button id="btn_pagar">Pagar con Culqi</button>
+    </div>
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://checkout.culqi.com/js/v4"></script>
+    <script>
+        // [Culqi Checkout v4](https://docs.culqi.com/es/documentacion/checkout/v4/culqi-checkout/)
+
+        const CULQI_PK = 'pk_test_M0TYRagiwjjSHo3n';
+        const CULQI_MYCHARGE_AUTHORIZATION = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+
+        function setCulqi(amount) {
+            Culqi.publicKey = CULQI_PK;
+
+            Culqi.settings({
+                title: 'Culqi Checkout Demo',
+                currency: 'PEN',
+                amount: amount,
+                order: '' // Este parámetro es requerido para realizar pagos con pagoEfectivo, billeteras y Cuotéalo
+            });
+
+            Culqi.options({
+                lang: 'auto',
+                installments: true,
+                paymentMethods: {
+                    tarjeta: true,
+                    bancaMovil: false,
+                    agente: false,
+                    billetera: false,
+                    cuotealo: false
+                },
+                style: {
+                    logo: 'https://culqi.com/assets/images/brand/brandCulqi-white.svg',
+                    bannerColor: '', // hexadecimal
+                    buttonBackground: '', // hexadecimal
+                    menuColor: '', // hexadecimal
+                    linksColor: '', // hexadecimal
+                    buttonText: '', // texto que tomará el botón
+                    buttonTextColor: '', // hexadecimal
+                    priceColor: '' // hexadecimal
+                }
+            });
+
+            return function culqi() {
+                if (Culqi.token) {  // ¡Objeto Token creado exitosamente!
+                    const token = Culqi.token;
+                    const tokenId = Culqi.token.id;
+                    const getSettings = Culqi.getSettings;
+                    console.log(`Se ha creado el objeto Token: `, token, tokenId, getSettings);
+                    const metadata = {
+                        n: 123,
+                        s: 'Hola',
+                        r: Math.random(),
+                    };
+                    const data = {
+                        amount: getSettings.amount,
+                        currency_code: getSettings.currency,
+                        email: Culqi.token.email,
+                        source_id: tokenId,
+                        metadata: metadata
+                    };
+                    //En esta linea de codigo debemos enviar el "Culqi.token.id"
+                    //hacia tu servidor con Ajax
+                    const authorization = CULQI_MYCHARGE_AUTHORIZATION;
+                    const headers = {
+                        Accept: "application/json, text/plain, */*",
+                        "Content-Type": "application/json",
+                        Authorization: authorization
+                    };
+                    const chargeUrl = 'https://rulokoba.me/culqi-demo/charge';
+                    axios.post(chargeUrl, data, {headers})
+                        .then(result => {
+                            console.log(result);
+                        })
+                        .catch(error => {
+                            console.log(error);
+                        });
+                } else if (Culqi.order) {  // ¡Objeto Order creado exitosamente!
+                    const order = Culqi.order;
+                    console.log(`Se ha creado el objeto Order: `, order);
+
+                } else {
+                    // Mostramos JSON de objeto error en consola
+                    console.log(`Error : ${Culqi.error.merchant_message}.`);
+                }
+            };
+        }
+        
+        window.culqi = {};
+        
+        const btn_pagar = document.getElementById('btn_pagar');
+
+        btn_pagar.addEventListener('click', function (e) {
+            // Abre el formulario con la configuración en Culqi.settings y CulqiOptions
+            const amount = document.getElementById('input_monto').value * 100;
+            console.log(amount);
+
+            window.culqi = setCulqi(amount);
+            Culqi.open();
+
+            e.preventDefault();
+        });
+
+
+    </script>
+</body>
+
+</html>
