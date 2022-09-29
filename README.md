@@ -31,6 +31,4 @@ Simple formulario para llamar al formulario de pago de culqi con el monto indica
         - Si todo va bien, el *objeto* `Culqi.token` es el token que será seteado por Culqi
         - Se envía la data al endpoint de charge
 
-## Cargo
-
 - 
