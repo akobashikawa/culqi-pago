@@ -20,22 +20,91 @@
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script src="https://checkout.culqi.com/js/v4"></script>
     <script>
-        // [Culqi Checkout v4](https://docs.culqi.com/es/documentacion/checkout/v4/culqi-checkout/)
+        // Documentación: [Culqi Checkout v4](https://docs.culqi.com/es/documentacion/checkout/v4/culqi-checkout/)
 
+        // CONST
+        ////////
+
+        // llave pública para culqi
         const CULQI_PK = 'pk_test_M0TYRagiwjjSHo3n';
+
+        // url del endpoint propio que solicitará el cargo a culqi
+        const CULQI_MYCHARGE_URL = 'https://rulokoba.me/culqi-demo/charge';
+
+        // ejemplo de token de autorización para CULQI_MYCHARGE_URL 
         const CULQI_MYCHARGE_AUTHORIZATION = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
 
-        function setCulqi(amount) {
+        // LIB
+        //////
+
+        /**
+         * Devuelve una función que se puede asignar a window.culqi
+         * - culqiPk: Llave pública provista por el dashboard de culqi
+         * - settings: objeto para inicializar el formulario de pago
+         */
+        function setCulqi(culqiPk, settings, options, metadata) {
             Culqi.publicKey = CULQI_PK;
 
-            Culqi.settings({
+            Culqi.settings(settings);
+
+            Culqi.options(options);
+
+            return function culqi() {
+                if (Culqi.token) {  // ¡Objeto Token creado exitosamente!
+                    const token = Culqi.token;
+                    const tokenId = Culqi.token.id;
+                    const getSettings = Culqi.getSettings;
+                    console.log(`Se ha creado el objeto Token: `, token, tokenId, getSettings);
+                    const data = {
+                        amount: getSettings.amount,
+                        currency_code: getSettings.currency,
+                        email: Culqi.token.email,
+                        source_id: tokenId,
+                        metadata
+                    };
+                    console.log('data', data);
+                    const headers = {
+                        Accept: "application/json, text/plain, */*",
+                        "Content-Type": "application/json",
+                        Authorization: CULQI_MYCHARGE_AUTHORIZATION
+                    };
+                    
+                    axios.post(CULQI_MYCHARGE_URL, data, {headers})
+                        .then(result => {
+                            console.log(result);
+                        })
+                        .catch(error => {
+                            console.log(error);
+                        });
+                } else if (Culqi.order) {  // ¡Objeto Order creado exitosamente!
+                    const order = Culqi.order;
+                    console.log(`Se ha creado el objeto Order: `, order);
+
+                } else {
+                    // Mostramos JSON de objeto error en consola
+                    console.log(`Error : ${Culqi.error.merchant_message}.`);
+                }
+            };
+        }
+
+        // MAIN
+        ///////
+
+        const btn_pagar = document.getElementById('btn_pagar');
+
+        btn_pagar.addEventListener('click', function (e) {
+            // Abre el formulario con la configuración en Culqi.settings y CulqiOptions
+            const amount = document.getElementById('input_monto').value * 100;
+            console.log(amount);
+
+            const culqiSettings = {
                 title: 'Culqi Checkout Demo',
                 currency: 'PEN',
-                amount: amount,
+                amount,
                 order: '' // Este parámetro es requerido para realizar pagos con pagoEfectivo, billeteras y Cuotéalo
-            });
+            };
 
-            Culqi.options({
+            const culqiOptions = {
                 lang: 'auto',
                 installments: true,
                 paymentMethods: {
@@ -55,63 +124,23 @@
                     buttonTextColor: '', // hexadecimal
                     priceColor: '' // hexadecimal
                 }
-            });
-
-            return function culqi() {
-                if (Culqi.token) {  // ¡Objeto Token creado exitosamente!
-                    const token = Culqi.token;
-                    const tokenId = Culqi.token.id;
-                    const getSettings = Culqi.getSettings;
-                    console.log(`Se ha creado el objeto Token: `, token, tokenId, getSettings);
-                    const metadata = {
-                        n: 123,
-                        s: 'Hola',
-                        r: Math.random(),
-                    };
-                    const data = {
-                        amount: getSettings.amount,
-                        currency_code: getSettings.currency,
-                        email: Culqi.token.email,
-                        source_id: tokenId,
-                        metadata: metadata
-                    };
-                    //En esta linea de codigo debemos enviar el "Culqi.token.id"
-                    //hacia tu servidor con Ajax
-                    const authorization = CULQI_MYCHARGE_AUTHORIZATION;
-                    const headers = {
-                        Accept: "application/json, text/plain, */*",
-                        "Content-Type": "application/json",
-                        Authorization: authorization
-                    };
-                    const chargeUrl = 'https://rulokoba.me/culqi-demo/charge';
-                    axios.post(chargeUrl, data, {headers})
-                        .then(result => {
-                            console.log(result);
-                        })
-                        .catch(error => {
-                            console.log(error);
-                        });
-                } else if (Culqi.order) {  // ¡Objeto Order creado exitosamente!
-                    const order = Culqi.order;
-                    console.log(`Se ha creado el objeto Order: `, order);
-
-                } else {
-                    // Mostramos JSON de objeto error en consola
-                    console.log(`Error : ${Culqi.error.merchant_message}.`);
-                }
             };
-        }
-        
-        window.culqi = {};
-        
-        const btn_pagar = document.getElementById('btn_pagar');
 
-        btn_pagar.addEventListener('click', function (e) {
-            // Abre el formulario con la configuración en Culqi.settings y CulqiOptions
-            const amount = document.getElementById('input_monto').value * 100;
-            console.log(amount);
+            // data arbitraria que culqi incorporará tal cual
+            const metadata = {
+                correlativo: 123,
+                nombre: 'Ana Aragón'
+            };
 
-            window.culqi = setCulqi(amount);
+            // preparar la funcion culqi
+            window.culqi = setCulqi(
+                CULQI_PK, 
+                culqiSettings, 
+                culqiOptions, 
+                metadata
+            );
+
+            // abrir el formulario de pago
             Culqi.open();
 
             e.preventDefault();
