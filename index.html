@@ -72,9 +72,11 @@
                     axios.post(CULQI_MYCHARGE_URL, data, {headers})
                         .then(result => {
                             console.log(result);
+                            Culqi.close();
                         })
                         .catch(error => {
                             console.log(error);
+                            alert('Ocurrió un error');
                         });
                 } else if (Culqi.order) {  // ¡Objeto Order creado exitosamente!
                     const order = Culqi.order;
